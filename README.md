@@ -8,7 +8,7 @@ cd outline-setup
 ./outline-setup pull
 ```
 
-Copy the `outline-setup` directory to the offline device, including the files `outline.sh`, `settings.env`, `docker-compose`, and `images.tar.gz` at the minimum. On the offline device:
+Copy the `outline-setup` directory to the offline device, including the files `outline.sh`, `docker-compose.yml`, `settings.env`, `docker-compose`, and `images.tar.gz` at the minimum. On the offline device:
 
 ```bash
 cd outline-setup

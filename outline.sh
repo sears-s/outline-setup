@@ -63,7 +63,7 @@ cmd_pull() {
 
 cmd_install() {
 	# Create data directory and fix permissions for outline nodejs user
-	$outline_storage_dir=$DATA_DIR/outline-storage
+	outline_storage_dir=$DATA_DIR/outline-storage
 	if [ ! -d $outline_storage_dir ]; then
 		mkdir -p $outline_storage_dir
 		chown 1001:1001 $outline_storage_dir

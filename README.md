@@ -8,7 +8,7 @@ cd outline-setup
 ./outline-setup pull
 ```
 
-Copy the `outline-setup` directory to the offline device, including the files `outline.sh`, `docker-compose.yml`, `settings.env`, `docker-compose` (~60MB), and `images.tar.gz` (~650MB) at the minimum. On the offline device, setup Keycloak using the following steps:
+Copy the `outline-setup` directory to the offline device, including the files `outline.sh`, `docker-compose.yml`, `settings.env`, `docker-compose` (~60MB), and `images.tar.gz` (~650MB) at the minimum. On the offline device, setup Keycloak (instructions tested for version 11.0.3) using the following steps:
 
 1. Go to https://controller.lan/auth/realms/CVAH-SSO/console (or applicable URL) to access the console for the realm.
 2. Click on _Clients_, then _Create_.
@@ -18,7 +18,7 @@ Copy the `outline-setup` directory to the offline device, including the files `o
 6. Click _Save_, then _Credentials_.
 7. Ensure _Client Authenticator_ is set to _Client Id and Secret_. Copy the _Secret_ value.
 
-Open `settings.env` with a text editor, and set `KEYCLOAK_CLIENT_SECRET` to the value just copied. Adjust other settings as needed. Then start the services:
+Open `settings.env` with a text editor, and set `KEYCLOAK_CLIENT_SECRET` to the value just copied. Adjust other settings as needed. Start the services:
 
 ```bash
 cd outline-setup

@@ -120,7 +120,7 @@ case $cmd in
 *)
 
 	# Check if compose is downloaded
-	if [ $cmd != "install" ] && [ ! -f $compose_path ]; then
+	if [ $cmd != "pull" ] && [ ! -f $compose_path ]; then
 		echo "Error: $compose_path does not exist. Run the pull command on an internet-connected device." >&2
 		exit 1
 	fi

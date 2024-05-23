@@ -5,6 +5,9 @@ networks:
 
 x-common-service: &common-service
   restart: unless-stopped
+  # Uncomment for older docker version
+  # security_opt:
+    # - seccomp=unconfined
 
 x-common-healthcheck: &common-healthcheck
   interval: 10s
@@ -43,6 +46,8 @@ services:
       - --providers.docker.endpoint=tcp://socket-proxy:2375
       - --providers.docker.exposedByDefault=false
       - --providers.docker.defaultRule=Host(`{{index .Labels "com.docker.compose.service"}}.${DOMAIN}`)
+      # Uncomment and put in correct traefik network name if experiencing gateway timeouts
+      #- --providers.docker.network=outline-setup_traefik
       - --entrypoints.https.address=:${PORT}
       - --entrypoints.https.asdefault=true
       - --entrypoints.https.http.tls.domains[0].main=${DOMAIN}
@@ -89,6 +94,7 @@ services:
       ENABLE_UPDATES: "false"
       DEFAULT_LANGUAGE: en_US
       NODE_ENV: production
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
       RATE_LIMITER_ENABLED: "false"
       LOG_LEVEL: ${OUTLINE_LOG_LEVEL}
       WEB_CONCURRENCY: ${OUTLINE_WEB_CONCURRENCY}
@@ -137,6 +143,8 @@ services:
       DRAWIO_SELF_CONTAINED: 1
       DRAWIO_USE_HTTP: 1
       DRAWIO_BASE_URL: https://drawio.${DOMAIN}:${PORT}
+      DRAWIO_LIGHTBOX_URL: https://drawio.${DOMAIN}:${PORT}
+      DRAWIO_VIEWER_URL: https://drawio.${DOMAIN}:${PORT}/viewer.min.js
     labels:
       traefik.enable: true
     networks:

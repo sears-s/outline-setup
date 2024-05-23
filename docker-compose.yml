@@ -15,8 +15,7 @@ x-common-healthcheck: &common-healthcheck
 services:
   socket-proxy:
     <<: *common-service
-    image: ghcr.io/tecnativa/docker-socket-proxy:latest
-    #image: ghcr.io/tecnativa/docker-socket-proxy:0.1
+    image: ghcr.io/tecnativa/docker-socket-proxy:${SOCKET_PROXY_VERSION}
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:2375/version"]
       <<: *common-healthcheck
@@ -30,8 +29,7 @@ services:
 
   traefik:
     <<: *common-service
-    image: docker.io/library/traefik:banon
-    #image: docker.io/library/traefik:3.0
+    image: docker.io/library/traefik:${TRAEFIK_VERSION}
     depends_on:
       - socket-proxy
     healthcheck:
@@ -40,31 +38,33 @@ services:
     command:
       - --accesslog=true
       - --accesslog.filepath=/access.log
+      - --ping=true
       - --providers.docker=true
       - --providers.docker.endpoint=tcp://socket-proxy:2375
-      - --providers.docker.network=traefik
-      - --providers.docker.defaultRule=Host(`{{ . Name }}.${DOMAIN}:${PORT}`)
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.defaultRule=Host(`{{index .Labels "com.docker.compose.service"}}.${DOMAIN}`)
       - --entrypoints.https.address=:${PORT}
-      #- --entrypoints.https.asdefault=true
-      - --entrypoints.https.http.tls.domains[0].main=${DOMAIN}:${PORT}
-      - --entrypoints.https.http.tls.domains[0].sans=*.${DOMAIN}:${PORT}
+      - --entrypoints.https.asdefault=true
+      - --entrypoints.https.http.tls.domains[0].main=${DOMAIN}
+      - --entrypoints.https.http.tls.domains[0].sans=*.${DOMAIN}
       - --global.checknewversion=false
       - --log=true
-      - --log.level=WARN
+      - --log.level=INFO
     volumes:
       - ${DATA_DIR}/access.log:/access.log:Z
     networks:
-      - proxy
       - traefik
+      - proxy
+    ports:
+      - ${PORT}:${PORT}
 
   outline:
     <<: *common-service
-    image: docker.getoutline.com/outlinewiki/outline:latest
-    #image: docker.getoutline.com/outlinewiki/outline:0.76.1
+    image: docker.getoutline.com/outlinewiki/outline:${OUTLINE_VERSION}
     depends_on:
       - outline-db
       - outline-redis
-      - diagrams
+      - drawio
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:3000"]
       <<: *common-healthcheck
@@ -76,15 +76,15 @@ services:
       FILE_STORAGE: local
       FILE_STORAGE_LOCAL_ROOT_DIR: /var/lib/outline/data
       FILE_STORAGE_UPLOAD_MAX_SIZE: 262144000
+      OIDC_DISPLAY_NAME: Keycloak
       OIDC_AUTH_URI: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/auth
       OIDC_TOKEN_URI: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
       OIDC_USERINFO_URI: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/userinfo
       OIDC_LOGOUT_URI: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/logout
-      OIDC_USERNAME_CLAIM: preferred_username
-      OIDC_DISPLAY_NAME: OpenID Connect
-      OIDC_SCOPES: openid profile email
       OIDC_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      OIDC_USERNAME_CLAIM: ${KEYCLOAK_USERNAME_CLAIM}
+      OIDC_SCOPES: ${KEYCLOAK_SCOPES}
       FORCE_HTTPS: "false"
       ENABLE_UPDATES: "false"
       DEFAULT_LANGUAGE: en_US
@@ -97,15 +97,14 @@ services:
     volumes:
       - ${DATA_DIR}/outline-storage:/var/lib/outline/data:Z
     labels:
-      - traefik.enable=true
+      traefik.enable: true
     networks:
       - traefik
       - outline
 
   outline-db:
     <<: *common-service
-    image: docker.io/library/postgres:latest
-    #image: docker.io/library/postgres:16.3
+    image: docker.io/library/postgres:${POSTGRES_VERSION}
     healthcheck:
       test:
         ["CMD", "pg_isready", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}"]
@@ -121,43 +120,24 @@ services:
 
   outline-redis:
     <<: *common-service
-    image: docker.io/library/redis:latest
-    #image: docker.io/library/redis:7.2
+    image: docker.io/library/redis:${REDIS_VERSION}
     healthcheck:
-      test: ["CMD-SHELL", "$$(redis-cli ping) == 'PONG'"]
+      test: ["CMD-SHELL", "[ $$(redis-cli ping) = 'PONG' ]"]
       <<: *common-healthcheck
     networks:
       - outline
 
-  diagrams:
+  drawio:
     <<: *common-service
-    image: docker.io/jgraph/drawio:latest
-    #image: docker.io/jgraph/drawio:24.4.4
-    depends_on:
-      - diagrams-export
+    image: docker.io/jgraph/drawio:${DRAWIO_VERSION}
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080"]
       <<: *common-healthcheck
     environment:
       DRAWIO_SELF_CONTAINED: 1
       DRAWIO_USE_HTTP: 1
-      DRAWIO_BASE_URL: https://diagrams.${DOMAIN}:${PORT}
-      EXPORT_URL: https://diagrams-export.${DOMAIN}:${PORT}
+      DRAWIO_BASE_URL: https://drawio.${DOMAIN}:${PORT}
     labels:
-      - traefik.enable=true
-    networks:
-      - traefik
-
-  diagrams-export:
-    <<: *common-service
-    image: docker.io/jgraph/export-server:latest
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8000"]
-      <<: *common-healthcheck
-    environment:
-      DRAWIO_BASE_URL: https://diagrams.${DOMAIN}:${PORT}
-    labels:
-      # TODO: test how this should be exposed
-      - traefik.enable=true
+      traefik.enable: true
     networks:
       - traefik

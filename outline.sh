@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Exit on errors
-#set -e
+set -e
 
 # Check script is running as root
 if [ $(id -u) -ne 0 ]; then
@@ -62,8 +62,12 @@ cmd_pull() {
 }
 
 cmd_install() {
-	# Create data directory
-	mkdir -p $DATA_DIR
+	# Create data directory and fix permissions for outline nodejs user
+	$outline_storage_dir=$DATA_DIR/outline-storage
+	if [ ! -d $outline_storage_dir ]; then
+		mkdir -p $outline_storage_dir
+		chown 1001:1001 $outline_storage_dir
+	fi
 
 	# Create access log
 	if [ ! -f $access_log_path ]; then
@@ -94,8 +98,8 @@ cmd_install() {
 }
 
 cmd_start() {
+	cmd_install
 	cmd_stop
-	#cmd_install
 	$compose_cmd_offline up -d
 }
 
